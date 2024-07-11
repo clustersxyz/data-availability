@@ -12,8 +12,18 @@ const rpc: CelestiaRpc = {
 const da = new ClustersDA({ celestiaRpc: rpc });
 
 const blob: CelestiaBlob = {
-  height: 1861953,
-  namespace: 'AAAAAAAAAAAAAAAAAAAAAAAAABMKy/ZU1bLxit0=',
+  height: 1867000,
+  namespace: 'AAAAAAAAAAAAAAAAAAAAAAAAAKKnitomrCy/HoY=',
 };
 
-console.log('Blob:', blob, '\nCommitments:', await da.getBlobs(blob));
+const range = 10;
+
+console.log('Request for individual block:');
+let commitments = await da.getUpdates(blob);
+console.log('Blob:', blob, '\nCommitments:', commitments);
+console.log('');
+
+console.log('Request for range of blocks:');
+let batchCommitments = await da.getUpdatesRange(blob, range);
+console.log('Initial Blob:', blob, '\nRange:', range, '\nCommitments:', batchCommitments);
+if (batchCommitments && batchCommitments.length > 0) console.log(`Total blobs found: ${batchCommitments.length}`);

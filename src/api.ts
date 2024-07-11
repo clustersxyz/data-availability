@@ -16,7 +16,7 @@ const generateRequest = (rpc: CelestiaRpc, blob: CelestiaBlob): Request => {
   return { headers, body };
 };
 
-const makeRequest = async (rpc: CelestiaRpc, request: Request): Promise<BlobData[]> => {
+const makeRequest = async (rpc: CelestiaRpc, request: Request): Promise<BlobData[] | null> => {
   try {
     const response = await fetch(rpc.url, {
       method: 'POST',
@@ -31,7 +31,7 @@ const makeRequest = async (rpc: CelestiaRpc, request: Request): Promise<BlobData
     const data = (await response.json()) as BlobResponse;
 
     if (!data.result || !Array.isArray(data.result)) {
-      throw new Error('Invalid response format');
+      return null;
     }
 
     return data.result;
@@ -40,7 +40,7 @@ const makeRequest = async (rpc: CelestiaRpc, request: Request): Promise<BlobData
   }
 };
 
-export const fetchBlobs = async (rpc: CelestiaRpc, blob: CelestiaBlob): Promise<BlobData[]> => {
+export const fetchBlobs = async (rpc: CelestiaRpc, blob: CelestiaBlob): Promise<BlobData[] | null> => {
   const request = generateRequest(rpc, blob);
   const response = await makeRequest(rpc, request);
   return response;
