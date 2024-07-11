@@ -40,8 +40,8 @@ const makeRequest = async (rpc: CelestiaRpc, request: Request): Promise<BlobData
   }
 };
 
-export const fetchBlobs = async (rpc: CelestiaRpc, blob: CelestiaBlob): Promise<BlobData[] | null> => {
-  const request = generateRequest(rpc, blob);
-  const response = await makeRequest(rpc, request);
-  return response;
+export const fetchBlobs = async (rpc: CelestiaRpc, blobs: CelestiaBlob[]): Promise<(BlobData[] | null)[]> => {
+  const requests = blobs.map((blob) => generateRequest(rpc, blob));
+  const responses = await Promise.all(requests.map((request) => makeRequest(rpc, request)));
+  return responses;
 };
