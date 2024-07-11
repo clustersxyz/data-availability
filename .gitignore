@@ -177,3 +177,4 @@ dist
 # Miscellaneous
 lib
 package-lock.json
+bun.lockb
