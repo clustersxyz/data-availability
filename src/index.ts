@@ -1,4 +1,4 @@
-import { fundNode, uploadData } from './api';
+import { fundNode, queryData, uploadData } from './api';
 
 export const ClustersDA = class {
   rpcProvider: string;
@@ -22,6 +22,14 @@ export const ClustersDA = class {
       await uploadData(this.rpcProvider, this.privateKey, data);
     } catch (error) {
       throw new Error(`Error uploading data to Irys: ${error}`);
+    }
+  };
+
+  query = async (addresses: string[]) => {
+    try {
+      await queryData(addresses);
+    } catch (error) {
+      throw new Error(`Error querying data from Irys: ${error}`);
     }
   };
 };

@@ -1,7 +1,8 @@
 import Irys from '@irys/sdk';
+import Query from '@irys/query';
 
 const getIrys = async (rpc: string, key: string) => {
-  const network = 'devnet';
+  const network = 'mainnet';
   // Devnet RPC URLs change often, use a recent one from https://chainlist.org/
   const providerUrl = rpc;
   const token = 'ethereum';
@@ -32,5 +33,15 @@ export const uploadData = async (rpc: string, key: string, data: string) => {
     console.log(`Data uploaded ==> https://gateway.irys.xyz/${receipt.id}`);
   } catch (error) {
     console.log(`Error uploading data: ${error}`);
+  }
+};
+
+export const queryData = async (addresses: string[]) => {
+  const myQuery = new Query({ network: 'mainnet' });
+  try {
+    const results = await myQuery.search('irys:transactions').from(addresses);
+    console.log(results);
+  } catch (error) {
+    console.log(`Error querying data: ${error}`);
   }
 };
