@@ -12,8 +12,8 @@ const rpc: CelestiaRpc = {
 const da = new ClustersDA({ celestiaRpc: rpc });
 
 const blob: CelestiaBlob = {
-  height: 1867000,
-  namespace: 'AAAAAAAAAAAAAAAAAAAAAAAAAKKnitomrCy/HoY=',
+  height: 2242787,
+  namespace: 'AAAAAAAAAAAAAAAAAAAAAAAAAJg3TaPvmcEEi50=',
 };
 
 const range = 10;
