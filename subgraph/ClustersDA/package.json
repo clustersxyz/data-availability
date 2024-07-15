@@ -4,10 +4,10 @@
   "scripts": {
     "codegen": "graph codegen",
     "build": "graph build",
-    "deploy": "graph deploy --node undefined clustersxyz/ClustersDA",
-    "create-local": "graph create --node http://localhost:8020/ clustersxyz/ClustersDA",
-    "remove-local": "graph remove --node http://localhost:8020/ clustersxyz/ClustersDA",
-    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 clustersxyz/ClustersDA",
+    "deploy": "graph deploy --node undefined ClustersDA",
+    "create-local": "graph create --node http://localhost:8020/ ClustersDA",
+    "remove-local": "graph remove --node http://localhost:8020/ ClustersDA",
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 ClustersDA",
     "test": "graph test"
   },
   "dependencies": {
