@@ -1,22 +1,25 @@
-specVersion: 1.0.0
-indexerHints:
-  prune: auto
+specVersion: 1.2.0
+description: Arweave Blocks Indexing
+repository: https://github.com/graphprotocol/graph-toolings
 schema:
   file: ./schema.graphql
 dataSources:
   - kind: arweave
-    name: Contract
+    name: arweave-blocks
     network: arweave-mainnet
     source:
-      owner: ""
+      owner: '0xA779fC675Db318dab004Ab8D538CB320D0013F42'
+      startBlock: 1466556
     mapping:
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
+      file: ./src/blocks.ts
       entities:
         - Block
+        - Tag
         - Transaction
+        - Poa
       blockHandlers:
         - handler: handleBlock
       transactionHandlers:
         - handler: handleTx
-      file: ./src/mapping.ts
