@@ -13,3 +13,8 @@ export type V1UpdateData = [
   number,
 ];
 export type V1EventData = V1RegistrationData | V1UpdateData;
+
+export type UploadReceipt = {
+  txids: string[];
+  bundle: string;
+};
