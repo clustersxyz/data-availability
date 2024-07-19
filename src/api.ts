@@ -6,8 +6,23 @@ import { Bundle } from 'arbundles/node';
 // Types
 import { IrysTransaction } from '@irys/sdk/common/types';
 import { AddressType } from '@clustersxyz/sdk/types/address';
-import { EventQueryFilter, EventResponse, Event, RegistrationEvent, UpdateEvent } from '@clustersxyz/sdk/types/event';
-import { IrysQuery, QueryResults, UploadReceipt, V1EventData, V1RegistrationData, V1UpdateData } from './types';
+import {
+  EventQueryFilter,
+  EventResponse,
+  Event,
+  RegistrationEvent,
+  UpdateWalletEvent,
+  RemoveWalletEvent,
+} from '@clustersxyz/sdk/types/event';
+import {
+  IrysQuery,
+  QueryResults,
+  UploadReceipt,
+  V1EventData,
+  V1RegistrationData,
+  V1UpdateWalletData,
+  V1RemoveWalletData,
+} from './types';
 
 const VERSION = 1;
 const UPLOADER_ADDRESS = '0x0000000000000000000000000000000000000000';
@@ -55,29 +70,43 @@ export const fetchEvents = async (apiKey?: string, filter?: EventQueryFilter): P
 export const convertEventsToDataArrays = (events: Event[]): V1EventData[] => {
   try {
     return events.map((event) => {
-      if (event.eventType === 'register') {
-        return [
-          VERSION,
-          event.eventType,
-          event.bytes32Address,
-          event.address,
-          event.addressType,
-          event.clusterName,
-          event.data.weiAmount,
-          event.timestamp,
-        ] as V1RegistrationData;
-      } else {
-        return [
-          VERSION,
-          event.eventType,
-          event.bytes32Address,
-          event.address,
-          event.addressType,
-          event.clusterName,
-          event.data.name,
-          event.data.isVerified,
-          event.timestamp,
-        ] as V1UpdateData;
+      switch (event.eventType) {
+        case 'register':
+          return [
+            VERSION,
+            event.eventType,
+            event.clusterId,
+            event.bytes32Address,
+            event.address,
+            event.addressType,
+            event.data.name,
+            event.data.weiAmount,
+            event.timestamp,
+          ] as V1RegistrationData;
+        case 'updateWallet':
+          return [
+            VERSION,
+            event.eventType,
+            event.clusterId,
+            event.bytes32Address,
+            event.address,
+            event.addressType,
+            event.data.name,
+            event.data.isVerified,
+            event.timestamp,
+          ] as V1UpdateWalletData;
+        case 'removeWallet':
+          return [
+            VERSION,
+            event.eventType,
+            event.clusterId,
+            event.bytes32Address,
+            event.address,
+            event.addressType,
+            event.timestamp,
+          ] as V1RemoveWalletData;
+        default:
+          throw new Error(`Unknown event type: ${(event as Event).eventType}`);
       }
     });
   } catch (error) {
@@ -96,10 +125,10 @@ export const writeData = async (rpc: string, key: string, data: V1EventData[]): 
           { name: 'Content-Type', value: 'text/plain' },
           { name: 'Data-Version', value: data[i][0].toString() },
           { name: 'Event-Type', value: data[i][1] },
-          { name: 'Bytes32', value: data[i][2] },
-          { name: 'Address', value: data[i][3] },
-          { name: 'Address-Type', value: data[i][4]?.toString() ?? '' },
-          { name: 'Cluster-Name', value: data[i][5]?.toString() ?? '' },
+          { name: 'Cluster-ID', value: data[i][2].toString() },
+          { name: 'Bytes32', value: data[i][3] },
+          { name: 'Address', value: data[i][4] },
+          { name: 'Address-Type', value: data[i][5]?.toString() ?? '' },
         ],
       });
       await newTx.sign();
@@ -147,37 +176,51 @@ export const readBundleData = (data: Buffer): Event[] => {
 
   return bundle.items.map((item) => {
     const decodedString = Buffer.from(item.data, 'base64').toString('utf-8');
-    const [, eventType, bytes32Address, address, addressType, clusterName, ...rest] = decodedString.split(',');
+    const [, eventType, clusterId, bytes32Address, address, addressType, ...rest] = decodedString.split(',');
 
-    if (eventType === 'register') {
-      const [weiAmount, timestamp] = rest;
-      return {
-        eventType: 'register',
-        bytes32Address: bytes32Address as `0x${string}`,
-        address,
-        addressType: addressType as AddressType,
-        clusterName,
-        data: {
-          weiAmount: Number(weiAmount),
-        },
-        timestamp: Number(timestamp),
-      } as RegistrationEvent;
-    } else if (eventType === 'update') {
-      const [name, isVerified, timestamp] = rest;
-      return {
-        eventType: 'update',
-        bytes32Address: bytes32Address as `0x${string}`,
-        address,
-        addressType: addressType as AddressType,
-        clusterName: clusterName === '' ? null : clusterName,
-        data: {
-          name: name === '' ? null : name,
-          isVerified: isVerified === 'true',
-        },
-        timestamp: Number(timestamp),
-      } as UpdateEvent;
-    } else {
-      throw new Error(`Unknown event type: ${eventType}`);
+    const baseEvent = {
+      clusterId: Number(clusterId),
+      bytes32Address: bytes32Address as `0x${string}`,
+      address,
+      addressType: addressType as AddressType,
+    };
+
+    switch (eventType) {
+      case 'register': {
+        const [name, weiAmount, timestamp] = rest;
+        return {
+          ...baseEvent,
+          eventType: 'register',
+          data: {
+            name,
+            weiAmount: Number(weiAmount),
+          },
+          timestamp: Number(timestamp),
+        } as RegistrationEvent;
+      }
+      case 'updateWallet': {
+        const [name, isVerified, timestamp] = rest;
+        return {
+          ...baseEvent,
+          eventType: 'updateWallet',
+          data: {
+            name,
+            isVerified: isVerified === 'true',
+          },
+          timestamp: Number(timestamp),
+        } as UpdateWalletEvent;
+      }
+      case 'removeWallet': {
+        const [timestamp] = rest;
+        return {
+          ...baseEvent,
+          eventType: 'removeWallet',
+          data: null,
+          timestamp: Number(timestamp),
+        } as RemoveWalletEvent;
+      }
+      default:
+        throw new Error(`Unknown event type: ${eventType}`);
     }
   });
 };
