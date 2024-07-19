@@ -1,10 +1,13 @@
+// SDKs
 import { Clusters } from '@clustersxyz/sdk';
-import { EventQueryFilter, EventResponse, Event } from '@clustersxyz/sdk/types/event';
-import { IrysQuery, QueryResults, UploadReceipt, V1EventData, V1RegistrationData, V1UpdateData } from './types';
 import Irys from '@irys/sdk';
 import Query from '@irys/query';
-import { IrysTransaction } from '@irys/sdk/common/types';
 import { Bundle } from 'arbundles/node';
+// Types
+import { IrysTransaction } from '@irys/sdk/common/types';
+import { AddressType } from '@clustersxyz/sdk/types/address';
+import { EventQueryFilter, EventResponse, Event, RegistrationEvent, UpdateEvent } from '@clustersxyz/sdk/types/event';
+import { IrysQuery, QueryResults, UploadReceipt, V1EventData, V1RegistrationData, V1UpdateData } from './types';
 
 const VERSION = 1;
 const UPLOADER_ADDRESS = '0x0000000000000000000000000000000000000000';
@@ -33,6 +36,7 @@ const getIrys = async (rpc: string, key: string) => {
 };
 
 /*
+// Doesn't seem to return something I can await in queryWrites
 const buildIrysQuery = (queryParams: IrysQuery) => {
   const myQuery = new Query({ network: 'mainnet' });
   let queryBuilder = myQuery.search('irys:transactions');
@@ -157,4 +161,58 @@ export const queryWrites = async (query: string[] | IrysQuery): Promise<QueryRes
   } catch (error) {
     throw new Error(`Error reading data from Arweave via Irys: ${error}`);
   }
+};
+
+export const downloadBundle = async (id: string): Promise<Buffer> => {
+  try {
+    const url = `https://gateway.irys.xyz/${id}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error status: ${response.status}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  } catch (error) {
+    throw new Error(`Error downloading Irys bundle: ${error}`);
+  }
+};
+
+export const readBundleData = (data: Buffer): Event[] => {
+  const bundle = new Bundle(data);
+
+  return bundle.items.map((item) => {
+    const decodedString = Buffer.from(item.data, 'base64').toString('utf-8');
+    const [, eventType, bytes32Address, address, addressType, clusterName, ...rest] = decodedString.split(',');
+
+    if (eventType === 'register') {
+      const [weiAmount, timestamp] = rest;
+      return {
+        eventType: 'register',
+        bytes32Address: bytes32Address as `0x${string}`,
+        address,
+        addressType: addressType as AddressType,
+        clusterName,
+        data: {
+          weiAmount: Number(weiAmount),
+        },
+        timestamp: Number(timestamp),
+      } as RegistrationEvent;
+    } else if (eventType === 'update') {
+      const [name, isVerified, timestamp] = rest;
+      return {
+        eventType: 'update',
+        bytes32Address: bytes32Address as `0x${string}`,
+        address,
+        addressType: addressType as AddressType,
+        clusterName: clusterName === '' ? null : clusterName,
+        data: {
+          name: name === '' ? null : name,
+          isVerified: isVerified === 'true',
+        },
+        timestamp: Number(timestamp),
+      } as UpdateEvent;
+    } else {
+      throw new Error(`Unknown event type: ${eventType}`);
+    }
+  });
 };
