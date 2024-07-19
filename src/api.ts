@@ -11,6 +11,7 @@ import { IrysQuery, QueryResults, UploadReceipt, V1EventData, V1RegistrationData
 
 const VERSION = 1;
 const UPLOADER_ADDRESS = '0x0000000000000000000000000000000000000000';
+const START_TIMESTAMP = 1721425000;
 
 const getClusters = async (apiKey?: string) => {
   try {
@@ -34,43 +35,6 @@ const getIrys = async (rpc: string, key: string) => {
     throw new Error(`Error instantiating Irys SDK: ${error}`);
   }
 };
-
-/*
-// Doesn't seem to return something I can await in queryWrites
-const buildIrysQuery = (queryParams: IrysQuery) => {
-  const myQuery = new Query({ network: 'mainnet' });
-  let queryBuilder = myQuery.search('irys:transactions');
-
-  queryBuilder = queryBuilder.from(queryParams.from || [UPLOADER_ADDRESS]);
-
-  queryBuilder = queryBuilder.sort(queryParams.sort || 'ASC');
-
-  if (queryParams.fromTimestamp) {
-    queryBuilder = queryBuilder.fromTimestamp(queryParams.fromTimestamp);
-  }
-
-  if (queryParams.toTimestamp) {
-    queryBuilder = queryBuilder.toTimestamp(queryParams.toTimestamp);
-  }
-
-  if (queryParams.limit) {
-    if (queryParams.limit > 1000) queryParams.limit = 1000;
-    queryBuilder = queryBuilder.limit(queryParams.limit);
-  }
-
-  if (queryParams.tags) {
-    queryBuilder = queryBuilder.tags(queryParams.tags);
-  }
-
-  if (queryParams.fields) {
-    queryBuilder = queryBuilder.fields(
-      queryParams.fields || { id: true, tags: { name: true, value: true }, timestamp: true },
-    );
-  }
-
-  return queryBuilder;
-};
-*/
 
 export const fetchEvents = async (apiKey?: string, filter?: EventQueryFilter): Promise<EventResponse> => {
   try {
@@ -149,15 +113,16 @@ export const writeData = async (rpc: string, key: string, data: V1EventData[]): 
   }
 };
 
-export const queryWrites = async (query: string[] | IrysQuery): Promise<QueryResults[]> => {
+export const queryWrites = async (query: IrysQuery): Promise<QueryResults[]> => {
   try {
-    //const myQuery = buildIrysQuery(query);
     const myQuery = new Query({ network: 'mainnet' });
     return (await myQuery
       .search('irys:transactions')
-      .from(Array.isArray(query) ? query : query.from)
-      .sort('ASC')
-      .fields({ id: true, timestamp: true })) as QueryResults[];
+      .from(query.addresses ? query.addresses : [UPLOADER_ADDRESS])
+      .fromTimestamp(query.fromTimestamp ? query.fromTimestamp : START_TIMESTAMP)
+      .sort(query.sort ? query.sort : 'ASC')
+      .fields(query.fields ? query.fields : { id: true, timestamp: true })
+      .limit(query.limit && query.limit <= 1000 ? query.limit : 1000)) as QueryResults[];
   } catch (error) {
     throw new Error(`Error reading data from Arweave via Irys: ${error}`);
   }
