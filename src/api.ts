@@ -2,6 +2,7 @@ import { Clusters } from '@clustersxyz/sdk';
 import { EventQueryFilter, EventResponse, Event } from '@clustersxyz/sdk/types/event';
 import { UploadReceipt, V1EventData, V1RegistrationData, V1UpdateData } from './types';
 import Irys from '@irys/sdk';
+import Query from '@irys/query';
 import { IrysTransaction } from '@irys/sdk/common/types';
 
 const VERSION = 1;
@@ -89,6 +90,7 @@ export const writeData = async (rpc: string, key: string, data: V1EventData[]): 
           { name: 'Content-Type', value: 'text/plain' },
           { name: 'Data-Version', value: data[i][0].toString() },
           { name: 'Event-Type', value: data[i][1] },
+          { name: 'Bytes32', value: data[i][2] },
           { name: 'Address', value: data[i][3] },
           { name: 'Address-Type', value: data[i][4]?.toString() ?? '' },
           { name: 'Cluster-Name', value: data[i][5]?.toString() ?? '' },
@@ -104,3 +106,15 @@ export const writeData = async (rpc: string, key: string, data: V1EventData[]): 
     throw new Error(`Error writing data to Arweave via Irys: ${error}`);
   }
 };
+
+export const readData = async (address: string) => {
+  try {
+    const query = new Query({ network: 'mainnet' });
+    const results = await query.search('irys:transactions').from([address]);
+    console.log(results);
+  } catch (error) {
+    throw new Error(`Error reading data from Arweave via Irys: ${error}`);
+  }
+};
+
+console.log(await readData('0xA779fC675Db318dab004Ab8D538CB320D0013F42'));
