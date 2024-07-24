@@ -186,15 +186,15 @@ export const uploadData = async (
   key: JWKInterface,
   data: EventResponse | Event[] | string[],
 ): Promise<UploadReceipt> => {
-  if ((!Array.isArray(data) && data.items.length === 0) || (Array.isArray(data) && data.length === 0))
-    throw new Error('No data was provided for upload.');
-
-  let upload;
-  if (Array.isArray(data))
-    upload = typeof data[0] === 'string' ? data.toString() : convertEventsToDataArrays(data as Event[]).toString();
-  else upload = convertEventsToDataArrays(data.items).toString();
-
   try {
+    if ((!Array.isArray(data) && data.items.length === 0) || (Array.isArray(data) && data.length === 0))
+      throw new Error('No data was provided for upload.');
+
+    let upload;
+    if (Array.isArray(data))
+      upload = typeof data[0] === 'string' ? data.toString() : convertEventsToDataArrays(data as Event[]).toString();
+    else upload = convertEventsToDataArrays(data.items).toString();
+
     let arweave = await getArweave(rpc);
     let transaction = await arweave.createTransaction({ data: upload }, key);
     transaction.addTag('Content-Type', 'text/html');
@@ -218,8 +218,9 @@ export const uploadData = async (
 };
 
 export const resumeUpload = async (rpc: ApiConfig, receipt: UploadReceipt): Promise<UploadReceipt> => {
-  if (!receipt.data) throw new Error(`UploadReceipt does not include the required data.`);
   try {
+    if (!receipt.data) throw new Error(`UploadReceipt does not include the required data.`);
+
     let arweave = await getArweave(rpc);
     let uploader = await arweave.transactions.getUploader(
       receipt.uploader ? JSON.parse(receipt.uploader) : receipt.id,
@@ -243,8 +244,9 @@ export const resumeUpload = async (rpc: ApiConfig, receipt: UploadReceipt): Prom
 };
 
 export const fetchData = async (rpc: ApiConfig, txids: string[]): Promise<(Event[] | string[])[]> => {
-  if (txids.length === 0) throw new Error('No transaction IDs were provided for retrieval.');
   try {
+    if (txids.length === 0) throw new Error('No transaction IDs were provided for retrieval.');
+
     let arweave = await getArweave(rpc);
     let response: (Event[] | string[])[] = [];
     for (const tx in txids) {
@@ -264,8 +266,9 @@ export const fetchData = async (rpc: ApiConfig, txids: string[]): Promise<(Event
 };
 
 export const writeManifest = async (rpc: ApiConfig, key: JWKInterface, txids: string[]): Promise<UploadReceipt> => {
-  if (txids.length === 0) throw new Error('No transaction IDs were provided for the manifest.');
   try {
+    if (txids.length === 0) throw new Error('No transaction IDs were provided for the manifest.');
+
     const manifest = await uploadData(rpc, key, txids);
     if (!manifest.isComplete) throw new Error(`Manifest failed to upload to Arweave: ${manifest}`);
     return manifest;
@@ -280,12 +283,13 @@ export const updateManifest = async (
   manifest: string,
   txids: string[],
 ): Promise<UploadReceipt> => {
-  if (txids.length === 0) throw new Error('No transaction IDs were provided for the manifest.');
-  if (manifest === '') throw new Error('No manifest TXID was provided.');
   try {
+    if (txids.length === 0) throw new Error('No transaction IDs were provided for the manifest.');
+    if (manifest === '') throw new Error('No manifest TXID was provided.');
+
     const oldManifest = await fetchData(rpc, [manifest]);
     if (oldManifest.length === 0) throw new Error('Previous manifest TXID did not return any manifest data.');
-    if (Array.isArray(oldManifest[0])) throw new Error('Retrieved data sample does not match manifest format.');
+    if (Array.isArray(oldManifest[0][0])) throw new Error('Retrieved data sample does not match manifest format.');
     const newManifest = [...oldManifest, ...txids] as string[];
     return await writeManifest(rpc, key, newManifest);
   } catch (error) {
@@ -300,5 +304,14 @@ export const retrieveLastUpload = async (rpc: ApiConfig, address: string): Promi
     return await response.text();
   } catch (error) {
     throw new Error(`Error retrieving last upload from ${address}: ${error}`);
+  }
+};
+
+export const getAddressFromKey = async (rpc: ApiConfig, key: JWKInterface): Promise<string> => {
+  try {
+    let arweave = await getArweave(rpc);
+    return await arweave.wallets.jwkToAddress(key);
+  } catch (error) {
+    throw new Error(`Error retrieving Arweave address from key: ${error}`);
   }
 };
