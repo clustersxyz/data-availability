@@ -26,19 +26,8 @@ export type V1RemoveWalletData = [number, 'removeWallet', number, `0x${string}`,
 export type V1EventData = V1RegistrationData | V1UpdateWalletData | V1RemoveWalletData;
 
 export type UploadReceipt = {
-  txids: string[];
-  bundle: string;
-};
-
-export type IrysQuery = {
-  addresses?: string[];
-  fromTimestamp?: number;
-  sort?: 'ASC' | 'DESC';
-  fields?: {};
-  limit?: number; // <= 1000
-};
-
-export type QueryResults = {
   id: string;
-  timestamp: number;
+  isComplete: boolean;
+  uploader?: string;
+  data?: string;
 };
