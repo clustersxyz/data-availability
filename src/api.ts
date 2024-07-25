@@ -299,7 +299,7 @@ export const updateManifest = async (
 
 export const retrieveLastUpload = async (rpc: ApiConfig, address: string): Promise<string> => {
   try {
-    const response = await fetch(`https://${rpc.host}:${rpc.port}/wallet/${address}/last_tx`);
+    const response = await fetch(`http://${rpc.host}:${rpc.port}/wallet/${address}/last_tx`);
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return await response.text();
   } catch (error) {

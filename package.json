@@ -29,6 +29,7 @@
     "@types/node": "20.12.12",
     "@typescript-eslint/eslint-plugin": "7.11.0",
     "@typescript-eslint/parser": "7.11.0",
+    "arlocal": "^1.1.66",
     "dotenv": "^16.4.5",
     "eslint": "8.56.0",
     "prettier": "3.2.5",
