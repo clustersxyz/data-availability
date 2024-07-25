@@ -81,43 +81,19 @@ const convertEventsToDataArrays = (events: Event[]): V1EventData[] => {
   }
 };
 
-const parseDataArrayString = (data: string): (V1EventData | string)[] => {
-  try {
-    const parsed = JSON.parse(data);
-    if (!Array.isArray(parsed)) throw new Error('Parsed data is not an array.');
-    return parsed.map((item): V1EventData | string => {
-      if (!Array.isArray(item)) return item.toString();
-      switch (item[0]) {
-        case 1:
-          switch (item[1]) {
-            case 'register':
-              if (item.length !== 9) throw new Error('Invalid register event data');
-              return item as V1RegistrationData;
-            case 'updateWallet':
-              if (item.length !== 9) throw new Error('Invalid updateWallet event data');
-              return item as V1UpdateWalletData;
-            case 'removeWallet':
-              if (item.length !== 7) throw new Error('Invalid removeWallet event data');
-              return item as V1RemoveWalletData;
-            default:
-              throw new Error('Unknown event type');
-          }
-        default:
-          throw new Error('Unknown event version');
-      }
-    });
-  } catch (error) {
-    throw new Error(`Error parsing data: ${error}`);
-  }
-};
-
 const convertDataToEvents = (data: V1EventData[]): Event[] => {
   try {
     return data.map((item): Event => {
-      const [_, eventType, clusterId, bytes32Address, address, addressType, ...rest] = item;
-
+      if (!Array.isArray(item) || item.length < 7) {
+        throw new Error(`Invalid event data format: ${JSON.stringify(item)}`);
+      }
+      const [version, eventType, clusterId, bytes32Address, address, addressType, ...rest] = item;
+      if (version !== VERSION) {
+        throw new Error(`Unsupported event version: ${version}`); // NOTE: Adjust the logic when VERSION is incremented
+      }
       switch (eventType) {
         case 'register':
+          if (rest.length !== 3) throw new Error('Invalid register event data');
           return {
             eventType,
             clusterId,
@@ -132,6 +108,7 @@ const convertDataToEvents = (data: V1EventData[]): Event[] => {
           } as RegistrationEvent;
 
         case 'updateWallet':
+          if (rest.length !== 3) throw new Error('Invalid updateWallet event data');
           return {
             eventType,
             clusterId,
@@ -146,6 +123,7 @@ const convertDataToEvents = (data: V1EventData[]): Event[] => {
           } as UpdateWalletEvent;
 
         case 'removeWallet':
+          if (rest.length !== 1) throw new Error('Invalid removeWallet event data');
           return {
             eventType,
             clusterId,
@@ -188,16 +166,19 @@ export const uploadData = async (
 ): Promise<UploadReceipt> => {
   try {
     if ((!Array.isArray(data) && data.items.length === 0) || (Array.isArray(data) && data.length === 0))
-      throw new Error('No data was provided for upload.');
+      throw new Error(`No data was provided for upload.`);
 
     let upload;
-    if (Array.isArray(data))
-      upload = typeof data[0] === 'string' ? data.toString() : convertEventsToDataArrays(data as Event[]).toString();
-    else upload = convertEventsToDataArrays(data.items).toString();
+    if (Array.isArray(data)) {
+      upload =
+        typeof data[0] === 'string' ? JSON.stringify(data) : JSON.stringify(convertEventsToDataArrays(data as Event[]));
+    } else {
+      upload = JSON.stringify(convertEventsToDataArrays(data.items));
+    }
 
     let arweave = await getArweave(rpc);
     let transaction = await arweave.createTransaction({ data: upload }, key);
-    transaction.addTag('Content-Type', 'text/html');
+    transaction.addTag('Content-Type', 'application/json');
     await arweave.transactions.sign(transaction, key);
     let uploader = await arweave.transactions.getUploader(transaction);
 
@@ -245,19 +226,23 @@ export const resumeUpload = async (rpc: ApiConfig, receipt: UploadReceipt): Prom
 
 export const fetchData = async (rpc: ApiConfig, txids: string[]): Promise<(Event[] | string[])[]> => {
   try {
-    if (txids.length === 0) throw new Error('No transaction IDs were provided for retrieval.');
+    if (txids.length === 0) throw new Error(`No transaction IDs were provided for retrieval.`);
 
     let arweave = await getArweave(rpc);
     let response: (Event[] | string[])[] = [];
-    for (const tx in txids) {
+    for (const tx of txids) {
       const data = await arweave.transactions.getData(tx, { decode: true, string: true });
-      const array = parseDataArrayString(data as string);
-      if (array.length === 0) {
-        console.log(`No data valid data parsed from txid: ${tx}`);
+      const parsedData = JSON.parse(data as string);
+      if (!Array.isArray(parsedData)) throw new Error(`Invalid data format for txid: ${tx}`);
+
+      if (parsedData.length === 0) {
+        console.log(`No valid data parsed from txid: ${tx}`);
         response.push([]);
-      } else if (Array.isArray(array[0])) {
-        response.push(convertDataToEvents(array as V1EventData[]));
-      } else response.push(array as string[]);
+      } else if (Array.isArray(parsedData[0])) {
+        response.push(convertDataToEvents(parsedData as V1EventData[]));
+      } else {
+        response.push(parsedData as string[]);
+      }
     }
     return response;
   } catch (error) {
@@ -267,13 +252,13 @@ export const fetchData = async (rpc: ApiConfig, txids: string[]): Promise<(Event
 
 export const writeManifest = async (rpc: ApiConfig, key: JWKInterface, txids: string[]): Promise<UploadReceipt> => {
   try {
-    if (txids.length === 0) throw new Error('No transaction IDs were provided for the manifest.');
+    if (txids.length === 0) throw new Error(`No transaction IDs were provided for the manifest.`);
 
     const manifest = await uploadData(rpc, key, txids);
     if (!manifest.isComplete) throw new Error(`Manifest failed to upload to Arweave: ${manifest}`);
     return manifest;
   } catch (error) {
-    throw new Error(`Error uploading to Arweave: ${error}`);
+    throw new Error(`Error uploading manifest to Arweave: ${error}`);
   }
 };
 
@@ -284,13 +269,16 @@ export const updateManifest = async (
   txids: string[],
 ): Promise<UploadReceipt> => {
   try {
-    if (txids.length === 0) throw new Error('No transaction IDs were provided for the manifest.');
-    if (manifest === '') throw new Error('No manifest TXID was provided.');
+    if (txids.length === 0) throw new Error(`No transaction IDs were provided for the manifest.`);
+    if (manifest === '') throw new Error(`No manifest TXID was provided.`);
 
-    const oldManifest = await fetchData(rpc, [manifest]);
-    if (oldManifest.length === 0) throw new Error('Previous manifest TXID did not return any manifest data.');
-    if (Array.isArray(oldManifest[0][0])) throw new Error('Retrieved data sample does not match manifest format.');
-    const newManifest = [...oldManifest, ...txids] as string[];
+    const oldManifestData = await fetchData(rpc, [manifest]);
+    if (oldManifestData.length === 0) throw new Error(`Previous manifest TXID did not return any manifest data.`);
+    const oldManifest = oldManifestData[0];
+    if (!Array.isArray(oldManifest) || !oldManifest.every((item) => typeof item === 'string')) {
+      throw new Error(`Retrieved data does not match manifest format.`);
+    }
+    const newManifest = [...oldManifest, ...txids];
     return await writeManifest(rpc, key, newManifest);
   } catch (error) {
     throw new Error(`Error updating manifest: ${error}`);
