@@ -44,14 +44,13 @@ export const ClustersDA = class {
       if (this.manifestUploader === undefined) throw new Error('No manifest uploader address or key was provided.');
       if (this.arweaveRpc === undefined) throw new Error('No Arweave RPC config was provided.');
 
-      const manifest = await fetchData(this.arweaveRpc, [
-        await retrieveLastUpload(
-          this.arweaveRpc,
-          typeof this.manifestUploader === 'string'
-            ? this.manifestUploader
-            : await getAddressFromKey(this.arweaveRpc, this.manifestUploader),
-        ),
-      ]);
+      const manifestId = await retrieveLastUpload(
+        this.arweaveRpc,
+        typeof this.manifestUploader === 'string'
+          ? this.manifestUploader
+          : await getAddressFromKey(this.arweaveRpc, this.manifestUploader),
+      );
+      const manifest = await fetchData(this.arweaveRpc, [manifestId]);
       return manifest[0] as string[];
     } catch (error) {
       throw new Error(`Error retrieving manifest from Arweave: ${error}`);
@@ -64,10 +63,8 @@ export const ClustersDA = class {
       if (this.manifestUploader === undefined || typeof this.manifestUploader === 'string')
         throw new Error('No manifest uploader key was provided.');
 
-      const manifest = await retrieveLastUpload(
-        this.arweaveRpc,
-        await getAddressFromKey(this.arweaveRpc, this.manifestUploader),
-      );
+      const manifestUploaderAddress = await getAddressFromKey(this.arweaveRpc, this.manifestUploader);
+      const manifest = await retrieveLastUpload(this.arweaveRpc, manifestUploaderAddress);
 
       let upload: UploadReceipt;
       if (manifest == '') upload = await writeManifest(this.arweaveRpc, this.manifestUploader, ids);
