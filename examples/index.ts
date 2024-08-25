@@ -4,7 +4,7 @@ import Arweave from 'arweave';
 import ArLocal from 'arlocal';
 dotenv.config();
 
-const apiKey = 'clusters_MANqUPP7Dtg1CP6GQbVLet';
+const apiKey = process.env.CLUSTERS_API_KEY;
 
 const manifestUploader = {
   kty: 'RSA',
