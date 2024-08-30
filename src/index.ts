@@ -17,7 +17,7 @@ export const ClustersDA = class {
   apiKey: string | undefined = undefined;
   manifestUploader: JWKInterface | string | undefined = undefined;
   eventUploader: JWKInterface | undefined = undefined;
-  arweaveRpc: ApiConfig | undefined = undefined;
+  arweaveRpc: ApiConfig | undefined = { host: 'arweave.net', port: 443, protocol: 'https' };
 
   constructor(obj?: {
     apiKey?: string;
