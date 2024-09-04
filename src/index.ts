@@ -11,7 +11,7 @@ import {
 import { EventQueryFilter, EventResponse, Event } from '@clustersxyz/sdk/types/event';
 import { ApiConfig } from 'arweave/node/lib/api';
 import { JWKInterface } from 'arweave/node/lib/wallet';
-import { UploadReceipt } from './types';
+import { UploadReceipt, ManifestData } from './types';
 
 export const ClustersDA = class {
   apiKey: string | undefined = undefined;
@@ -39,7 +39,7 @@ export const ClustersDA = class {
     }
   };
 
-  getCurrentManifest = async (): Promise<string[]> => {
+  getCurrentManifest = async (): Promise<ManifestData[]> => {
     try {
       if (this.manifestUploader === undefined) throw new Error('No manifest uploader address or key was provided.');
       if (this.arweaveRpc === undefined) throw new Error('No Arweave RPC config was provided.');
@@ -51,38 +51,44 @@ export const ClustersDA = class {
           : await getAddressFromKey(this.arweaveRpc, this.manifestUploader),
       );
       const manifest = await fetchData(this.arweaveRpc, [manifestId]);
-      return manifest[0] as string[];
+      if (!Array.isArray(manifest[0]) || manifest[0].length === 0 || !('id' in manifest[0][0])) {
+        throw new Error('Invalid manifest data retrieved');
+      }
+      return manifest[0] as ManifestData[];
     } catch (error) {
       throw new Error(`Error retrieving manifest from Arweave: ${error}`);
     }
   };
 
-  pushToManifest = async (ids: string[]): Promise<UploadReceipt> => {
+  pushToManifest = async (data: UploadReceipt[]): Promise<UploadReceipt> => {
     try {
       if (this.arweaveRpc === undefined) throw new Error('No Arweave RPC config was provided.');
       if (this.manifestUploader === undefined || typeof this.manifestUploader === 'string')
         throw new Error('No manifest uploader key was provided.');
 
       const manifestUploaderAddress = await getAddressFromKey(this.arweaveRpc, this.manifestUploader);
-      const manifest = await retrieveLastUpload(this.arweaveRpc, manifestUploaderAddress);
+      const manifestId = await retrieveLastUpload(this.arweaveRpc, manifestUploaderAddress);
 
       let upload: UploadReceipt;
-      if (manifest == '') upload = await writeManifest(this.arweaveRpc, this.manifestUploader, ids);
-      else upload = await updateManifest(this.arweaveRpc, this.manifestUploader, manifest, ids);
+      if (manifestId === '') {
+        upload = await writeManifest(this.arweaveRpc, this.manifestUploader, data);
+      } else {
+        upload = await updateManifest(this.arweaveRpc, this.manifestUploader, data, manifestId);
+      }
 
-      if (!upload.isComplete) throw new Error(`Updating manifest failed: ${upload}`);
+      if (!upload.isComplete) throw new Error(`Updating manifest failed: ${JSON.stringify(upload)}`);
       return upload;
     } catch (error) {
-      throw new Error(`Error adding ${ids} to manifest: ${error}`);
+      throw new Error(`Error adding data to manifest: ${error}`);
     }
   };
 
-  getFileIds = async (ids: string[]): Promise<Event[][]> => {
+  getFileIds = async (ids: string[]): Promise<(Event[] | ManifestData[])[]> => {
     try {
       if (this.arweaveRpc === undefined) throw new Error('No Arweave RPC config was provided.');
 
       const data = await fetchData(this.arweaveRpc, ids);
-      return data as Event[][];
+      return data;
     } catch (error) {
       throw new Error(`Error retrieving file data for ${ids}: ${error}`);
     }

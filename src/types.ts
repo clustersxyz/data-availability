@@ -30,4 +30,12 @@ export type UploadReceipt = {
   isComplete: boolean;
   uploader?: string;
   data?: string;
+  startTimestamp: number;
+  endTimestamp: number;
+};
+
+export type ManifestData = {
+  id: string;
+  startTimestamp: number;
+  endTimestamp: number;
 };

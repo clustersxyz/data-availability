@@ -63,11 +63,11 @@ const arweaveRpc = {
   const eventsUpload = await da.uploadEvents(events);
   if (!eventsUpload.isComplete) throw new Error(`Events upload failed.`);
 
-  const manifestUpload = await da.pushToManifest([eventsUpload.id]);
+  const manifestUpload = await da.pushToManifest([eventsUpload]);
   if (!manifestUpload.isComplete) throw new Error(`Manifest upload failed.`);
 
   let currentManifest = await da.getCurrentManifest();
-  const initialRead = await da.getFileIds(currentManifest);
+  const initialRead = await da.getFileIds(currentManifest.map((item) => item.id));
   if (JSON.stringify(events.items) !== JSON.stringify(initialRead[0])) {
     throw new Error(`Retrieved events do not match API response.`);
   }
@@ -75,11 +75,11 @@ const arweaveRpc = {
   const newEventsUpload = await da.uploadEvents(newEvents);
   if (!newEventsUpload.isComplete) throw new Error(`New events upload failed.`);
 
-  const updateManifest = await da.pushToManifest([newEventsUpload.id]);
+  const updateManifest = await da.pushToManifest([newEventsUpload]);
   if (!updateManifest.isComplete) throw new Error(`Manifest update failed.`);
 
   currentManifest = await da.getCurrentManifest();
-  const newRead = await da.getFileIds(currentManifest);
+  const newRead = await da.getFileIds(currentManifest.map((item) => item.id));
   if (JSON.stringify(newEvents.items) !== JSON.stringify(newRead[1])) {
     throw new Error(`Retrieved events do not match API response.`);
   }
@@ -89,6 +89,24 @@ const arweaveRpc = {
   ) {
     throw new Error(`Retrieved events are out of order`);
   }
+
+  // Verify manifest data
+  if (currentManifest.length !== 2) {
+    throw new Error(`Manifest should contain 2 entries, but contains ${currentManifest.length}`);
+  }
+  if (currentManifest[0].id !== eventsUpload.id || currentManifest[1].id !== newEventsUpload.id) {
+    throw new Error(`Manifest IDs do not match uploaded event IDs`);
+  }
+  if (
+    currentManifest[0].startTimestamp !== eventsUpload.startTimestamp ||
+    currentManifest[0].endTimestamp !== eventsUpload.endTimestamp ||
+    currentManifest[1].startTimestamp !== newEventsUpload.startTimestamp ||
+    currentManifest[1].endTimestamp !== newEventsUpload.endTimestamp
+  ) {
+    throw new Error(`Manifest timestamps do not match uploaded event timestamps`);
+  }
+
+  console.log('Test successful!');
 
   await arLocal.stop();
 })();
