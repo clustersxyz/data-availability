@@ -310,6 +310,22 @@ export const fetchData = async (
     let arweave = await getArweave(rpc);
     let response: (Event[] | ManifestData[])[] = [];
 
+    const filterEventsByTimestamp = (events: Event[]): Event[] => {
+      return events.filter(
+        (event) =>
+          (startTimestamp === undefined || event.timestamp >= startTimestamp) &&
+          (endTimestamp === undefined || event.timestamp <= endTimestamp),
+      );
+    };
+
+    const filterManifestByTimestamp = (manifest: ManifestData[]): ManifestData[] => {
+      return manifest.filter(
+        (entry) =>
+          (startTimestamp === undefined || entry.endTimestamp >= startTimestamp) &&
+          (endTimestamp === undefined || entry.startTimestamp <= endTimestamp),
+      );
+    };
+
     for (const tx of txids) {
       const data = await arweave.transactions.getData(tx, { decode: true, string: true });
       const parsedData = JSON.parse(data as string);
@@ -321,16 +337,14 @@ export const fetchData = async (
         response.push([]);
       } else if (Array.isArray(parsedData[0])) {
         const events = convertDataToEvents(parsedData as V1EventData[]);
-        if (startTimestamp !== undefined && endTimestamp !== undefined) {
-          response.push(events.filter((event) => event.timestamp >= startTimestamp && event.timestamp <= endTimestamp));
+        if (startTimestamp !== undefined || endTimestamp !== undefined) {
+          response.push(filterEventsByTimestamp(events));
         } else {
           response.push(events);
         }
       } else if (isManifestData(parsedData[0])) {
-        if (startTimestamp !== undefined && endTimestamp !== undefined) {
-          const filteredManifest = (parsedData as ManifestData[]).filter(
-            (entry) => entry.startTimestamp <= endTimestamp && entry.endTimestamp >= startTimestamp,
-          );
+        if (startTimestamp !== undefined || endTimestamp !== undefined) {
+          const filteredManifest = filterManifestByTimestamp(parsedData as ManifestData[]);
 
           // Fetch and filter events for each manifest entry
           let allFilteredEvents: Event[] = [];
@@ -339,9 +353,7 @@ export const fetchData = async (
             const parsedEntryData = JSON.parse(entryData as string) as V1EventData[];
             const entryEvents = convertDataToEvents(parsedEntryData);
 
-            const filteredEvents = entryEvents.filter(
-              (event) => event.timestamp >= startTimestamp && event.timestamp <= endTimestamp,
-            );
+            const filteredEvents = filterEventsByTimestamp(entryEvents);
             allFilteredEvents = allFilteredEvents.concat(filteredEvents);
           }
           response.push(allFilteredEvents);

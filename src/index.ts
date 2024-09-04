@@ -83,6 +83,19 @@ export const ClustersDA = class {
     }
   };
 
+  queryData = async (txids: string[], startTimestamp?: number, endTimestamp?: number): Promise<Event[]> => {
+    try {
+      if (this.arweaveRpc === undefined) throw new Error('No Arweave RPC config was provided.');
+
+      const data = await fetchData(this.arweaveRpc, txids, startTimestamp, endTimestamp);
+      // Flatten the array and filter out any ManifestData
+      const events: Event[] = data.flat().filter((item): item is Event => 'eventType' in item);
+      return events;
+    } catch (error) {
+      throw new Error(`Error querying data: ${error}`);
+    }
+  };
+
   getFileIds = async (ids: string[]): Promise<(Event[] | ManifestData[])[]> => {
     try {
       if (this.arweaveRpc === undefined) throw new Error('No Arweave RPC config was provided.');
