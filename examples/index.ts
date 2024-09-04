@@ -56,35 +56,28 @@ const arweaveRpc = {
   await fetch(`http://${arweaveRpc.host}:${arweaveRpc.port}/mint/${manifestAddress}/10000000000000`);
   await fetch(`http://${arweaveRpc.host}:${arweaveRpc.port}/mint/${eventAddress}/10000000000000`);
 
-  console.log('Retrieving events via Clusters SDK...');
   const events = await da.getEvents({ limit: 5 });
   const newEvents = await da.getEvents({ limit: 5, nextPage: events.nextPage as string });
   const eventBundle = await da.getEvents({ limit: 10 });
 
-  console.log('Uploading first event batch...');
   const eventsUpload = await da.uploadEvents(events);
   if (!eventsUpload.isComplete) throw new Error(`Events upload failed.`);
 
-  console.log('Writing first manifest...');
   const manifestUpload = await da.pushToManifest([eventsUpload]);
   if (!manifestUpload.isComplete) throw new Error(`Manifest upload failed.`);
 
-  console.log('Verifying uploaded events via manifest...');
   let currentManifest = await da.getCurrentManifest();
   const initialRead = await da.getFileIds(currentManifest.map((item) => item.id));
   if (JSON.stringify(events.items) !== JSON.stringify(initialRead[0])) {
     throw new Error(`Retrieved events do not match API response.`);
   }
 
-  console.log('Uploading second event batch...');
   const newEventsUpload = await da.uploadEvents(newEvents);
   if (!newEventsUpload.isComplete) throw new Error(`New events upload failed.`);
 
-  console.log('Updating manifest...');
   const updateManifest = await da.pushToManifest([newEventsUpload]);
   if (!updateManifest.isComplete) throw new Error(`Manifest update failed.`);
 
-  console.log('Verifying all uploaded events via manifest...');
   currentManifest = await da.getCurrentManifest();
   const newRead = await da.getFileIds(currentManifest.map((item) => item.id));
   if (JSON.stringify(newEvents.items) !== JSON.stringify(newRead[1])) {
@@ -97,7 +90,7 @@ const arweaveRpc = {
     throw new Error(`Retrieved events are out of order`);
   }
 
-  console.log('Verifying manifest data...');
+  // Verify manifest data
   if (currentManifest.length !== 2) {
     throw new Error(`Manifest should contain 2 entries, but contains ${currentManifest.length}`);
   }
@@ -117,7 +110,7 @@ const arweaveRpc = {
   console.log('Testing queryData function...');
 
   // Test case 1: Query all events (no timestamp filtering)
-  const allEvents = await da.queryData(currentManifest.map((item) => item.id));
+  const allEvents = await da.queryData();
   if (JSON.stringify(allEvents) !== JSON.stringify(eventBundle.items)) {
     throw new Error('Query all events failed: results do not match eventBundle');
   }
@@ -125,10 +118,7 @@ const arweaveRpc = {
 
   // Test case 2: Query events after a specific timestamp
   const startTimestamp = 1706799790; // Timestamp of the 4th event
-  const eventsAfter = await da.queryData(
-    currentManifest.map((item) => item.id),
-    startTimestamp,
-  );
+  const eventsAfter = await da.queryData(startTimestamp);
   if (eventsAfter.length !== 7 || eventsAfter[0].timestamp !== startTimestamp) {
     throw new Error('Query events after timestamp failed');
   }
@@ -136,11 +126,7 @@ const arweaveRpc = {
 
   // Test case 3: Query events before a specific timestamp
   const endTimestamp = 1706799796; // Timestamp of the 5th event
-  const eventsBefore = await da.queryData(
-    currentManifest.map((item) => item.id),
-    undefined,
-    endTimestamp,
-  );
+  const eventsBefore = await da.queryData(undefined, endTimestamp);
   if (eventsBefore.length !== 5 || eventsBefore[eventsBefore.length - 1].timestamp !== endTimestamp) {
     throw new Error('Query events before timestamp failed');
   }
@@ -149,11 +135,7 @@ const arweaveRpc = {
   // Test case 4: Query events within a specific time range
   const rangeStart = 1706799779; // Timestamp of the 3rd event
   const rangeEnd = 1706799839; // Timestamp of the 6th event
-  const eventsInRange = await da.queryData(
-    currentManifest.map((item) => item.id),
-    rangeStart,
-    rangeEnd,
-  );
+  const eventsInRange = await da.queryData(rangeStart, rangeEnd);
   if (
     eventsInRange.length !== 4 ||
     eventsInRange[0].timestamp !== rangeStart ||
@@ -165,10 +147,7 @@ const arweaveRpc = {
 
   // Test case 5: Query with a start timestamp that's before all events
   const earlyStart = 1706700000;
-  const earlyStartEvents = await da.queryData(
-    currentManifest.map((item) => item.id),
-    earlyStart,
-  );
+  const earlyStartEvents = await da.queryData(earlyStart);
   if (JSON.stringify(earlyStartEvents) !== JSON.stringify(eventBundle.items)) {
     throw new Error('Query with early start timestamp failed');
   }
@@ -176,11 +155,7 @@ const arweaveRpc = {
 
   // Test case 6: Query with an end timestamp that's after all events
   const lateEnd = 1706900000;
-  const lateEndEvents = await da.queryData(
-    currentManifest.map((item) => item.id),
-    undefined,
-    lateEnd,
-  );
+  const lateEndEvents = await da.queryData(undefined, lateEnd);
   if (JSON.stringify(lateEndEvents) !== JSON.stringify(eventBundle.items)) {
     throw new Error('Query with late end timestamp failed');
   }
@@ -189,11 +164,7 @@ const arweaveRpc = {
   // Test case 7: Query with a time range that doesn't include any events
   const noEventStart = 1706700000;
   const noEventEnd = 1706700001;
-  const noEvents = await da.queryData(
-    currentManifest.map((item) => item.id),
-    noEventStart,
-    noEventEnd,
-  );
+  const noEvents = await da.queryData(noEventStart, noEventEnd);
   if (noEvents.length !== 0) {
     throw new Error('Query with no events in range failed');
   }

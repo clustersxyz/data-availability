@@ -83,11 +83,22 @@ export const ClustersDA = class {
     }
   };
 
-  queryData = async (txids: string[], startTimestamp?: number, endTimestamp?: number): Promise<Event[]> => {
+  queryData = async (startTimestamp?: number, endTimestamp?: number): Promise<Event[]> => {
     try {
+      if (this.manifestUploader === undefined) throw new Error('No manifest uploader address or key was provided.');
       if (this.arweaveRpc === undefined) throw new Error('No Arweave RPC config was provided.');
 
-      const data = await fetchData(this.arweaveRpc, txids, startTimestamp, endTimestamp);
+      const manifestId = await retrieveLastUpload(
+        this.arweaveRpc,
+        typeof this.manifestUploader === 'string'
+          ? this.manifestUploader
+          : await getAddressFromKey(this.arweaveRpc, this.manifestUploader),
+      );
+      if (startTimestamp === undefined && endTimestamp === undefined) {
+        startTimestamp = 0;
+        endTimestamp = Number.MAX_SAFE_INTEGER;
+      }
+      const data = await fetchData(this.arweaveRpc, [manifestId], startTimestamp, endTimestamp);
       // Flatten the array and filter out any ManifestData
       const events: Event[] = data.flat().filter((item): item is Event => 'eventType' in item);
       return events;
