@@ -10,6 +10,6 @@
     "strict": true,
     "types": ["node"],
   },
-  "include": ["irys/src/**/*"],
-  "exclude": ["irys/examples/*"],
+  "include": ["src/**/*"],
+  "exclude": ["examples/*"],
 }
