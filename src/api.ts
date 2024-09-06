@@ -42,7 +42,7 @@ const getArweave = async (rpc: ApiConfig) => {
 };
 
 // Helper function to type check ManifestData
-const isManifestData = (data: any): data is ManifestData => {
+const isManifestData = (data: object): data is ManifestData => {
   return typeof data === 'object' && 'id' in data && 'startTimestamp' in data && 'endTimestamp' in data;
 };
 
@@ -232,13 +232,13 @@ export const uploadData = async (
       timestamps = extractTimestamps(sortedItems);
     }
 
-    let arweave = await getArweave(rpc);
-    let transaction = await arweave.createTransaction({ data: upload }, key);
+    const arweave = await getArweave(rpc);
+    const transaction = await arweave.createTransaction({ data: upload }, key);
     transaction.addTag('Content-Type', 'application/json');
     transaction.addTag('Start-Timestamp', timestamps.startTimestamp.toString());
     transaction.addTag('End-Timestamp', timestamps.endTimestamp.toString());
     await arweave.transactions.sign(transaction, key);
-    let uploader = await arweave.transactions.getUploader(transaction);
+    const uploader = await arweave.transactions.getUploader(transaction);
 
     try {
       while (!uploader.isComplete) await uploader.uploadChunk();
@@ -269,8 +269,8 @@ export const resumeUpload = async (rpc: ApiConfig, receipt: UploadReceipt): Prom
   try {
     if (!receipt.data) throw new Error(`UploadReceipt does not include the required data.`);
 
-    let arweave = await getArweave(rpc);
-    let uploader = await arweave.transactions.getUploader(
+    const arweave = await getArweave(rpc);
+    const uploader = await arweave.transactions.getUploader(
       receipt.uploader ? JSON.parse(receipt.uploader) : receipt.id,
       new TextEncoder().encode(receipt.data),
     );
@@ -307,8 +307,8 @@ export const fetchData = async (
   try {
     if (txids.length === 0) throw new Error(`No transaction IDs were provided for retrieval.`);
 
-    let arweave = await getArweave(rpc);
-    let response: (Event[] | ManifestData[])[] = [];
+    const arweave = await getArweave(rpc);
+    const response: (Event[] | ManifestData[])[] = [];
 
     const filterEventsByTimestamp = (events: Event[]): Event[] => {
       return events.filter(
@@ -333,7 +333,6 @@ export const fetchData = async (
       if (!Array.isArray(parsedData)) throw new Error(`Invalid data format for txid: ${tx}`);
 
       if (parsedData.length === 0) {
-        console.log(`No valid data parsed from txid: ${tx}`);
         response.push([]);
       } else if (Array.isArray(parsedData[0])) {
         const events = convertDataToEvents(parsedData as V1EventData[]);
@@ -438,7 +437,7 @@ export const retrieveLastUpload = async (rpc: ApiConfig, address: string): Promi
 
 export const getAddressFromKey = async (rpc: ApiConfig, key: JWKInterface): Promise<string> => {
   try {
-    let arweave = await getArweave(rpc);
+    const arweave = await getArweave(rpc);
     return await arweave.wallets.jwkToAddress(key);
   } catch (error) {
     throw new Error(`Error retrieving Arweave address from key: ${error}`);
