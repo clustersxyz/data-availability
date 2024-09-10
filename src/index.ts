@@ -17,7 +17,7 @@ export const ClustersDA = class {
   apiKey: string | undefined = undefined;
   manifestUploader: JWKInterface | string | undefined = undefined;
   eventUploader: JWKInterface | undefined = undefined;
-  arweaveRpc: ApiConfig | undefined = { host: 'arweave.net', port: 443, protocol: 'https' };
+  arweaveRpc: ApiConfig = { host: 'arweave.net', port: 443, protocol: 'https' };
 
   constructor(obj?: {
     apiKey?: string;
@@ -25,10 +25,10 @@ export const ClustersDA = class {
     eventUploader?: JWKInterface;
     arweaveRpc?: ApiConfig;
   }) {
-    this.apiKey = obj?.apiKey;
-    this.manifestUploader = obj?.manifestUploader;
-    this.eventUploader = obj?.eventUploader;
-    this.arweaveRpc = obj?.arweaveRpc;
+    if (obj?.apiKey) this.apiKey = obj.apiKey;
+    if (obj?.manifestUploader) this.manifestUploader = obj.manifestUploader;
+    if (obj?.eventUploader) this.eventUploader = obj.eventUploader;
+    if (obj?.arweaveRpc) this.arweaveRpc = obj.arweaveRpc;
   }
 
   getEvents = async (filter?: EventQueryFilter): Promise<EventResponse> => {
