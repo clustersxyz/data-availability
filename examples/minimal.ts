@@ -33,9 +33,11 @@ dotenv.config();
   await arLocal.stop();
 })();*/
 
-let key = JSON.parse(process.env.AR_UPDATES_KEY as string);
-
 let arweave = Arweave.init({ host: 'arweave.net', port: 443, protocol: 'https', logging: true });
+
+let key = JSON.parse(process.env.AR_UPDATES_KEY as string);
+let address = await arweave.wallets.jwkToAddress(key);
+console.log('Uploader Address:', address);
 
 let data = JSON.stringify({ message: 'Hello World' });
 
