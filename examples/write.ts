@@ -34,7 +34,7 @@ const eventsUpload = await da.uploadEvents(events);
 if (!eventsUpload.isComplete) throw new Error(`Events upload failed.`);
 console.log(eventsUpload);
 
-const manifestUpload = await da.pushToManifest([eventsUpload]);
+/*const manifestUpload = await da.pushToManifest([eventsUpload]);
 if (!manifestUpload.isComplete) throw new Error(`Manifest upload failed.`);
 console.log(manifestUpload);
 
@@ -43,7 +43,7 @@ console.log(currentManifest);
 const initialRead = await da.getFileIds(currentManifest.map((item) => item.id));
 if (JSON.stringify(events.items) !== JSON.stringify(initialRead[0])) {
   throw new Error(`Retrieved events do not match API response.`);
-}
+}*/
 
 /*
 const newEventsUpload = await da.uploadEvents(newEvents);
