@@ -1,5 +1,5 @@
 import * as dotenv from 'dotenv';
-import { ClustersDA } from '../src/index';
+import { ClustersDA } from '../dist/index.js';
 import Arweave from 'arweave';
 dotenv.config();
 
@@ -24,6 +24,7 @@ const da = new ClustersDA({
   apiKey: apiKey,
   manifestUploader: manifestUploader,
   eventUploader: eventUploader,
+  arweaveRpc: { host: 'arweave.net', port: 443, protocol: 'https', logging: true },
 });
 
 const events = await da.getEvents({ limit: 100 });

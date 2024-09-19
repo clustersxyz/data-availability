@@ -1,15 +1,17 @@
 {
   "compilerOptions": {
+    "target": "es2020",
     "module": "esnext",
-    "target": "es5",
-    "lib": ["es2020"],
-    "declaration": true,
-    "outDir": "./lib",
     "moduleResolution": "node",
     "esModuleInterop": true,
     "strict": true,
-    "types": ["node"],
+    "skipLibCheck": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "declaration": true,
+    "allowJs": true,
+    "resolveJsonModule": true
   },
   "include": ["src/**/*"],
-  "exclude": ["examples/*"],
+  "exclude": ["node_modules", "dist", "examples"]
 }

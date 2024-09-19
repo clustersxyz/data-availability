@@ -2,14 +2,15 @@
   "name": "@clustersxyz/data-availability",
   "version": "0.0.1",
   "description": "",
-  "main": "index.cjs",
+  "main": "./dist/index.js",
   "module": "index.esm.js",
   "type": "module",
   "scripts": {
-    "build": "npm run lint && rm -rf lib && rollup -c",
+    "build": "tsc",
+    "clean": "rm -rf dist",
     "mypublish": "npm run build && cp package.json lib && cp README.md lib && cp LICENSE lib",
     "lint": "eslint . --ext .ts",
-    "test": "exit 0",
+    "test": "node --loader ts-node/esm --experimental-specifier-resolution=node examples/test.ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "format-check": "prettier --check \"src/**/*.ts\""
   },
@@ -37,10 +38,11 @@
     "tslib": "^2.6.3",
     "tslint": "6.1.3",
     "tslint-config-prettier": "1.18.0",
-    "typescript": "5.4.5"
+    "typescript": "^5.4.5"
   },
   "dependencies": {
     "@clustersxyz/sdk": "^0.4.0",
-    "arweave": "^1.15.1"
+    "arweave": "^1.15.1",
+    "ts-node": "^10.9.2"
   }
 }
