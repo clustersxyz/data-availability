@@ -427,7 +427,9 @@ export const updateManifest = async (
 
 export const retrieveLastUpload = async (rpc: ApiConfig, address: string): Promise<string> => {
   try {
-    const response = await fetch(`http://${rpc.host}:${rpc.port}/wallet/${address}/last_tx`);
+    const response = await fetch(
+      `${rpc.port === 443 ? 'https' : 'http'}://${rpc.host}:${rpc.port}/wallet/${address}/last_tx`,
+    );
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return await response.text();
   } catch (error) {
@@ -442,4 +444,11 @@ export const getAddressFromKey = async (rpc: ApiConfig, key: JWKInterface): Prom
   } catch (error) {
     throw new Error(`Error retrieving Arweave address from key: ${error}`);
   }
+};
+
+export const checkConfirmation = async (rpc: ApiConfig, id: string): Promise<boolean> => {
+  const arweave = await getArweave(rpc);
+  const response = await arweave.transactions.getStatus(id);
+  if (response.status === 200) return true;
+  else return false;
 };

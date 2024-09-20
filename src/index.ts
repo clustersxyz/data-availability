@@ -1,4 +1,5 @@
 import {
+  checkConfirmation,
   fetchData,
   fetchEvents,
   getAddressFromKey,
@@ -12,6 +13,7 @@ import { EventQueryFilter, EventResponse, Event } from '@clustersxyz/sdk/types/e
 import { ApiConfig } from 'arweave/node/lib/api';
 import { JWKInterface } from 'arweave/node/lib/wallet';
 import { UploadReceipt, ManifestData } from './types';
+import { start } from 'repl';
 
 export const ClustersDA = class {
   apiKey: string | undefined = undefined;
@@ -60,20 +62,24 @@ export const ClustersDA = class {
     }
   };
 
-  pushToManifest = async (data: UploadReceipt[]): Promise<UploadReceipt> => {
+  pushToManifest = async (data: UploadReceipt[], init?: boolean): Promise<UploadReceipt> => {
     try {
       if (this.arweaveRpc === undefined) throw new Error('No Arweave RPC config was provided.');
       if (this.manifestUploader === undefined || typeof this.manifestUploader === 'string')
         throw new Error('No manifest uploader key was provided.');
 
-      const manifestUploaderAddress = await getAddressFromKey(this.arweaveRpc, this.manifestUploader);
-      const manifestId = await retrieveLastUpload(this.arweaveRpc, manifestUploaderAddress);
-
       let upload: UploadReceipt;
-      if (manifestId === '') {
+
+      if (init) {
         upload = await writeManifest(this.arweaveRpc, this.manifestUploader, data);
       } else {
-        upload = await updateManifest(this.arweaveRpc, this.manifestUploader, data, manifestId);
+        const manifestUploaderAddress = await getAddressFromKey(this.arweaveRpc, this.manifestUploader);
+        const manifestId = await retrieveLastUpload(this.arweaveRpc, manifestUploaderAddress);
+        if (manifestId === '') {
+          upload = await writeManifest(this.arweaveRpc, this.manifestUploader, data);
+        } else {
+          upload = await updateManifest(this.arweaveRpc, this.manifestUploader, data, manifestId);
+        }
       }
 
       if (!upload.isComplete) throw new Error(`Updating manifest failed: ${JSON.stringify(upload)}`);
@@ -94,10 +100,9 @@ export const ClustersDA = class {
           ? this.manifestUploader
           : await getAddressFromKey(this.arweaveRpc, this.manifestUploader),
       );
-      if (startTimestamp === undefined && endTimestamp === undefined) {
-        startTimestamp = 0;
-        endTimestamp = Number.MAX_SAFE_INTEGER;
-      }
+      if (startTimestamp === undefined) startTimestamp = 0;
+      if (endTimestamp === undefined) endTimestamp = Number.MAX_SAFE_INTEGER;
+
       const data = await fetchData(this.arweaveRpc, [manifestId], startTimestamp, endTimestamp);
       // Flatten the array and filter out any ManifestData
       const events: Event[] = data.flat().filter((item): item is Event => 'eventType' in item);
@@ -141,5 +146,28 @@ export const ClustersDA = class {
     } catch (error) {
       throw new Error(`Error resuming upload to Arweave: ${error}`);
     }
+  };
+
+  waitForConfirmation = async (id: string, retries: number = 30, interval: number = 30000) => {
+    let retry = 0;
+    let status = false;
+
+    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    while (status == false && retry < retries) {
+      try {
+        status = await checkConfirmation(this.arweaveRpc, id);
+        if (status !== true) {
+          retry++;
+          await sleep(interval);
+        }
+      } catch (error) {
+        console.error('Error checking status:', error);
+        retry++;
+        await sleep(interval);
+      }
+    }
+
+    if (retry === retries) throw new Error(`Confirmation for Arweave TXID ${id} timed out`);
   };
 };
