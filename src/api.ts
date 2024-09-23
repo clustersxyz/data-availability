@@ -327,8 +327,14 @@ export const fetchData = async (
     };
 
     for (const tx of txids) {
-      const data = await arweave.transactions.getData(tx, { decode: true, string: true });
+      let data;
+      try {
+        data = await arweave.transactions.getData(tx, { decode: true, string: true });
+      }
+      console.log('CHECKPOINT A1');
+      console.log(await data);
       const parsedData = JSON.parse(data as string);
+      console.log('CHECKPOINT A2');
 
       if (!Array.isArray(parsedData)) throw new Error(`Invalid data format for txid: ${tx}`);
 
