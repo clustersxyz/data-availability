@@ -348,7 +348,14 @@ export const fetchData = async (
           // Fetch and filter events for each manifest entry
           let allFilteredEvents: Event[] = [];
           for (const entry of filteredManifest) {
-            const entryData = await arweave.transactions.getData(entry.id, { decode: true, string: true });
+            let entryData: string | Uint8Array = '';
+            let retries: number = 0;
+            while (entryData.length <= 1 && retries < 5) {
+              entryData = await arweave.transactions.getData(entry.id, { decode: true, string: true });
+              ++retries;
+            }
+            if (entryData.length <= 1 && retries === 5) throw new Error(`Arweave gateway returning no data`);
+
             const parsedEntryData = JSON.parse(entryData as string) as V1EventData[];
             const entryEvents = convertDataToEvents(parsedEntryData);
 

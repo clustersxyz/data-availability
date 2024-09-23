@@ -70,6 +70,8 @@ const da = new ClustersDA({
 
 const manifest = await da.getCurrentManifest();
 console.log(manifest);
+const events = await da.queryData();
+console.log(events);
 
 /*
 //let key = JSON.parse(process.env.AR_UPDATES_KEY as string);
