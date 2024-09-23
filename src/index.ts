@@ -13,7 +13,6 @@ import { EventQueryFilter, EventResponse, Event } from '@clustersxyz/sdk/types/e
 import { ApiConfig } from 'arweave/node/lib/api';
 import { JWKInterface } from 'arweave/node/lib/wallet';
 import { UploadReceipt, ManifestData } from './types';
-import { start } from 'repl';
 
 export const ClustersDA = class {
   apiKey: string | undefined = undefined;
@@ -46,20 +45,16 @@ export const ClustersDA = class {
       if (this.manifestUploader === undefined) throw new Error('No manifest uploader address or key was provided.');
       if (this.arweaveRpc === undefined) throw new Error('No Arweave RPC config was provided.');
 
-      console.log('CHECKPOINT 1');
       const manifestId = await retrieveLastUpload(
         this.arweaveRpc,
         typeof this.manifestUploader === 'string'
           ? this.manifestUploader
           : await getAddressFromKey(this.arweaveRpc, this.manifestUploader),
       );
-      console.log('CHECKPOINT 2');
       const manifest = await fetchData(this.arweaveRpc, [manifestId]);
-      console.log('CHECKPOINT 3');
       if (!Array.isArray(manifest[0]) || manifest[0].length === 0 || !('id' in manifest[0][0])) {
         throw new Error('Invalid manifest data retrieved');
       }
-      console.log('CHECKPOINT 4');
       return manifest[0] as ManifestData[];
     } catch (error) {
       throw new Error(`Error retrieving manifest from Arweave: ${error}`);
