@@ -13,7 +13,6 @@ import { EventQueryFilter, EventResponse, Event } from '@clustersxyz/sdk/types/e
 import { ApiConfig } from 'arweave/node/lib/api';
 import { JWKInterface } from 'arweave/node/lib/wallet';
 import { UploadReceipt, ManifestData } from './types';
-import { start } from 'repl';
 
 export const ClustersDA = class {
   apiKey: string | undefined = undefined;

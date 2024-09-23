@@ -1,6 +1,7 @@
 import Arweave from 'arweave';
 import ArLocal from 'arlocal';
 import * as dotenv from 'dotenv';
+import { ClustersDA } from '../src/index';
 dotenv.config();
 
 let genKey = {
@@ -54,6 +55,23 @@ console.log('Address:', address);*/
 
 let arweave = Arweave.init({ host: 'arweave.net', port: 443, protocol: 'https', logging: true });
 
+const manifestUploader = JSON.parse(process.env.AR_MANIFEST_KEY as string);
+const eventUploader = JSON.parse(process.env.AR_UPDATES_KEY as string);
+
+console.log('Manifest:', await arweave.wallets.jwkToAddress(manifestUploader));
+console.log('Events:', await arweave.wallets.jwkToAddress(eventUploader));
+
+const da = new ClustersDA({
+  apiKey: '',
+  manifestUploader: manifestUploader,
+  eventUploader: eventUploader,
+  arweaveRpc: { host: 'arweave.net', port: 443, protocol: 'https', logging: true },
+});
+
+const manifest = await da.getCurrentManifest();
+console.log(manifest);
+
+/*
 //let key = JSON.parse(process.env.AR_UPDATES_KEY as string);
 let address = await arweave.wallets.jwkToAddress(genKey);
 console.log('Uploader Address:', address);
@@ -72,7 +90,7 @@ console.log(transaction);
 
 const response = await arweave.transactions.post(transaction);
 console.log(response);
-
+*/
 /*let uploader = await arweave.transactions.getUploader(transaction);
 while (!uploader.isComplete) {
   await uploader.uploadChunk();
