@@ -418,9 +418,12 @@ export const updateManifest = async (
 
     // Convert ManifestData[] to UploadReceipt[]
     const oldManifestReceipts: UploadReceipt[] = oldManifest.map((item) => ({
+      //@ts-ignore
       id: item.id,
       isComplete: true,
+      //@ts-ignore
       startTimestamp: item.startTimestamp,
+      //@ts-ignore
       endTimestamp: item.endTimestamp,
     }));
 

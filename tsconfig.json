@@ -1,23 +1,19 @@
 {
   "compilerOptions": {
-    "target": "es2020",
     "module": "esnext",
+    "target": "es2020",
+    "lib": ["es2020"],
+    "declaration": true,
+    "outDir": "./lib",
     "moduleResolution": "node",
     "esModuleInterop": true,
     "strict": true,
-    "skipLibCheck": true,
-    "outDir": "./lib",
-    "rootDir": "./src",
-    "declaration": true,
-    "allowJs": true,
-    "resolveJsonModule": true
+    "types": ["node"],
+    //"skipLibCheck": true,
+    //"rootDir": "./src",
+    //"allowJs": true,
+    //"resolveJsonModule": true
   },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "lib",
-    "examples"
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["examples/*"],
 }

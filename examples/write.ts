@@ -1,5 +1,5 @@
 import * as dotenv from 'dotenv';
-import { ClustersDA } from '../dist/index.js';
+import { ClustersDA } from '../src/index';
 import Arweave from 'arweave';
 dotenv.config();
 

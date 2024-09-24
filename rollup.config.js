@@ -6,6 +6,7 @@ export default {
     { file: 'lib/index.cjs', format: 'cjs' },
     { file: 'lib/index.esm.js', format: 'esm' },
   ],
-  plugins: [typescript({ tsconfig: './tsconfig.json' })],
+  plugins: [typescript()],
+  treeshake: true,
   external: ['@clustersxyz/sdk', 'arweave'],
 };

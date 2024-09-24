@@ -1,13 +1,12 @@
 {
   "name": "@clustersxyz/data-availability",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "",
-  "main": "./lib/index.cjs",
-  "module": "./lib/index.esm.js",
-  "types": "./lib/index.d.ts",
+  "main": "index.cjs",
+  "module": "index.esm.js",
   "type": "module",
   "scripts": {
-    "build": "rollup -c",
+    "build": "npm run lint && rm -rf lib && rollup -c",
     "clean": "rm -rf lib",
     "mypublish": "npm run build && cp package.json lib && cp README.md lib && cp LICENSE lib",
     "lint": "eslint . --ext .ts",
@@ -31,19 +30,19 @@
     "@types/node": "20.12.12",
     "@typescript-eslint/eslint-plugin": "7.11.0",
     "@typescript-eslint/parser": "7.11.0",
-    "arlocal": "^1.1.66",
-    "dotenv": "^16.4.5",
+    "arlocal": "1.1.66",
+    "dotenv": "16.4.5",
     "eslint": "8.56.0",
     "prettier": "3.2.5",
     "rollup": "4.22.4",
     "tslib": "^2.6.3",
     "tslint": "6.1.3",
     "tslint-config-prettier": "1.18.0",
-    "typescript": "^5.4.5"
+    "typescript": "5.4.5"
   },
   "dependencies": {
-    "@clustersxyz/sdk": "^0.4.0",
-    "arweave": "^1.15.1",
-    "ts-node": "^10.9.2"
+    "@clustersxyz/sdk": "0.4.0",
+    "arweave": "1.15.1",
+    "ts-node": "10.9.2"
   }
 }
