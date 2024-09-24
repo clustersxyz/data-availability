@@ -1,7 +1,7 @@
 import Arweave from 'arweave';
 import ArLocal from 'arlocal';
 import * as dotenv from 'dotenv';
-import { ClustersDA } from '../src/index';
+import { ClustersDA } from '../lib/index';
 dotenv.config();
 
 let genKey = {
@@ -71,7 +71,7 @@ const da = new ClustersDA({
 const manifest = await da.getCurrentManifest();
 console.log(manifest);
 const events = await da.queryData();
-console.log(events);
+//console.log(events);
 
 /*
 //let key = JSON.parse(process.env.AR_UPDATES_KEY as string);

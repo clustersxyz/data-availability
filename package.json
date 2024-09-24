@@ -2,15 +2,23 @@
   "name": "@clustersxyz/data-availability",
   "version": "0.0.3",
   "description": "",
-  "main": "index.cjs",
-  "module": "index.esm.js",
+  "main": "lib/index.cjs",
+  "module": "lib/index.mjs",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./lib/index.mjs",
+      "require": "./lib/index.cjs",
+      "types": "./lib/index.d.ts"
+    }
+  },
   "type": "module",
   "scripts": {
     "build": "npm run lint && rm -rf lib && rollup -c",
     "clean": "rm -rf lib",
     "mypublish": "npm run build && cp package.json lib && cp README.md lib && cp LICENSE lib",
     "lint": "eslint . --ext .ts",
-    "test": "node --loader ts-node/esm --experimental-specifier-resolution=node examples/test.ts",
+    "test": "npm run build && node --loader ts-node/esm --experimental-specifier-resolution=node --trace-warnings examples/test.ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "format-check": "prettier --check \"src/**/*.ts\""
   },

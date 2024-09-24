@@ -4,7 +4,7 @@ export default {
   input: 'src/index.ts',
   output: [
     { file: 'lib/index.cjs', format: 'cjs' },
-    { file: 'lib/index.esm.js', format: 'esm' },
+    { file: 'lib/index.mjs', format: 'esm' },
   ],
   plugins: [typescript()],
   treeshake: true,

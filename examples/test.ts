@@ -1,5 +1,5 @@
 import * as dotenv from 'dotenv';
-import { ClustersDA } from '../src/index';
+import { ClustersDA } from '../lib/index';
 import Arweave from 'arweave';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);

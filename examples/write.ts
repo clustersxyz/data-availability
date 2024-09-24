@@ -1,7 +1,9 @@
 import * as dotenv from 'dotenv';
-import { ClustersDA } from '../src/index';
+import { ClustersDA } from '../lib/index';
 import Arweave from 'arweave';
 dotenv.config();
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const colors = {
   green: '\x1b[32m',
@@ -77,6 +79,17 @@ await da.waitForConfirmation(updateManifest.id);
 console.log(fGreen('Manifest updated'));
 
 console.log(fYellow('Checking updated state'));
+currentManifest = [];
+// Repeatedly retrieve most recent manifest until it matches the last update
+while (currentManifest.length === 0) {
+  let updatedManifest = await da.getCurrentManifest();
+  if (updatedManifest.length > 1) {
+    currentManifest = updatedManifest;
+  } else {
+    console.log(fYellow('Waiting for manifest to update...'));
+    await sleep(15000);
+  }
+}
 currentManifest = await da.getCurrentManifest();
 const newRead = await da.getFileIds(currentManifest.map((item) => item.id));
 if (JSON.stringify(newEvents.items) !== JSON.stringify(newRead[1])) {
