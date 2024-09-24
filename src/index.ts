@@ -14,6 +14,7 @@ import { ApiConfig } from 'arweave/node/lib/api';
 import { JWKInterface } from 'arweave/node/lib/wallet';
 import { UploadReceipt, ManifestData } from './types';
 
+
 export const ClustersDA = class {
   apiKey: string | undefined = undefined;
   manifestUploader: JWKInterface | string | undefined = undefined;
