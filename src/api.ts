@@ -326,8 +326,18 @@ export const fetchData = async (
       );
     };
 
+    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
     for (const tx of txids) {
-      const data = await arweave.transactions.getData(tx, { decode: true, string: true });
+      let data: string | Uint8Array = '';
+      let retries: number = 0;
+      while (data.length <= 1 && retries < 5) {
+        data = await arweave.transactions.getData(tx, { decode: true, string: true });
+        if (retries > 1) {
+          await sleep(10_000);
+        }
+        ++retries;
+      }
       const parsedData = JSON.parse(data as string);
 
       if (!Array.isArray(parsedData)) throw new Error(`Invalid data format for txid: ${tx}`);
@@ -352,6 +362,9 @@ export const fetchData = async (
             let retries: number = 0;
             while (entryData.length <= 1 && retries < 5) {
               entryData = await arweave.transactions.getData(entry.id, { decode: true, string: true });
+              if (retries > 1) {
+                await sleep(10_000);
+              }
               ++retries;
             }
             if (entryData.length <= 1 && retries === 5) throw new Error(`Arweave gateway returning no data`);
