@@ -338,6 +338,7 @@ export const fetchData = async (
         }
         ++retries;
       }
+      if (data.length <= 1 && retries === 5) throw new Error(`Arweave gateway returning no data`);
       const parsedData = JSON.parse(data as string);
 
       if (!Array.isArray(parsedData)) throw new Error(`Invalid data format for txid: ${tx}`);
