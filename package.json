@@ -1,10 +1,10 @@
 {
   "name": "@clustersxyz/data-availability",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "",
-  "main": "lib/index.cjs",
-  "module": "lib/index.mjs",
-  "types": "lib/index.d.ts",
+  "main": "index.cjs",
+  "module": "index.mjs",
+  "types": "index.d.ts",
   "exports": {
     ".": {
       "import": "./lib/index.mjs",
