@@ -34,7 +34,7 @@ const getClusters = async (apiKey?: string) => {
 
 const getArweave = async (rpc: ApiConfig) => {
   try {
-    const arweave = Arweave.init(rpc);
+    const arweave = new Arweave(rpc);
     return arweave;
   } catch (error) {
     throw new Error(`Error instantiating Arweave SDK: ${error}`);
