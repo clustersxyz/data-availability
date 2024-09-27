@@ -61,6 +61,19 @@ export const ClustersDA = class {
     }
   };
 
+  getManifestId = async (): Promise<string> => {
+    if (this.manifestUploader === undefined) throw new Error('No manifest uploader address or key was provided.');
+    if (this.arweaveRpc === undefined) throw new Error('No Arweave RPC config was provided.');
+
+    const manifestId = await retrieveLastUpload(
+      this.arweaveRpc,
+      typeof this.manifestUploader === 'string'
+        ? this.manifestUploader
+        : await getAddressFromKey(this.arweaveRpc, this.manifestUploader),
+    );
+    return manifestId;
+  };
+
   pushToManifest = async (data: UploadReceipt[], init?: boolean): Promise<UploadReceipt> => {
     try {
       if (this.arweaveRpc === undefined) throw new Error('No Arweave RPC config was provided.');
