@@ -147,16 +147,20 @@ export const ClustersDA = class {
     }
   };
 
+  checkConfirmation = async (id: string): Promise<number> => {
+    return await checkConfirmation(this.arweaveRpc, id);
+  };
+
   waitForConfirmation = async (id: string, retries: number = 30, interval: number = 30000) => {
     let retry = 0;
-    let status = false;
+    let status: number = 0;
 
     const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-    while (status == false && retry < retries) {
+    while (status !== 200 && retry < retries) {
       try {
         status = await checkConfirmation(this.arweaveRpc, id);
-        if (status !== true) {
+        if (status !== 200) {
           retry++;
           await sleep(interval);
         }

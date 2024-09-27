@@ -470,9 +470,8 @@ export const getAddressFromKey = async (rpc: ApiConfig, key: JWKInterface): Prom
   }
 };
 
-export const checkConfirmation = async (rpc: ApiConfig, id: string): Promise<boolean> => {
+export const checkConfirmation = async (rpc: ApiConfig, id: string): Promise<number> => {
   const arweave = await getArweave(rpc);
   const response = await arweave.transactions.getStatus(id);
-  if (response.status === 200) return true;
-  else return false;
+  return response.status;
 };
