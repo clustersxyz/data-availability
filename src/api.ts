@@ -180,20 +180,13 @@ export const uploadData = async (
     if ((!Array.isArray(data) && data.items.length === 0) || (Array.isArray(data) && data.length === 0))
       throw new Error(`No data was provided for upload.`);
 
-    const sortByTimestamp = (a: Event | UploadReceipt, b: Event | UploadReceipt) => {
-      const getTimestamp = (item: Event | UploadReceipt) =>
-        'timestamp' in item ? item.timestamp : item.startTimestamp;
-      return getTimestamp(a) - getTimestamp(b);
-    };
-
     const extractTimestamps = (items: (Event | UploadReceipt)[]): { startTimestamp: number; endTimestamp: number } => {
       if (items.length === 0) {
         throw new Error('Cannot extract timestamps from an empty array');
       }
 
-      const sortedItems = [...items].sort(sortByTimestamp);
-      const firstItem = sortedItems[0];
-      const lastItem = sortedItems[sortedItems.length - 1];
+      const firstItem = items[0];
+      const lastItem = items[items.length - 1];
 
       return {
         startTimestamp: 'timestamp' in firstItem ? firstItem.timestamp : firstItem.startTimestamp,
@@ -215,21 +208,18 @@ export const uploadData = async (
     if (Array.isArray(data)) {
       if (data.every(isUploadReceipt)) {
         // UploadReceipt[]
-        const sortedData = [...data].sort(sortByTimestamp);
-        const manifestData = sortedData.map(convertToManifestData);
+        const manifestData = data.map(convertToManifestData);
         upload = JSON.stringify(manifestData);
-        timestamps = extractTimestamps(sortedData);
+        timestamps = extractTimestamps(data);
       } else {
         // Event[]
-        const sortedEvents = [...data].sort(sortByTimestamp) as Event[];
-        upload = JSON.stringify(convertEventsToDataArrays(sortedEvents));
-        timestamps = extractTimestamps(sortedEvents);
+        upload = JSON.stringify(convertEventsToDataArrays(data));
+        timestamps = extractTimestamps(data);
       }
     } else {
       // EventResponse
-      const sortedItems = [...data.items].sort(sortByTimestamp);
-      upload = JSON.stringify(convertEventsToDataArrays(sortedItems));
-      timestamps = extractTimestamps(sortedItems);
+      upload = JSON.stringify(convertEventsToDataArrays(data.items));
+      timestamps = extractTimestamps(data.items);
     }
 
     const arweave = await getArweave(rpc);
