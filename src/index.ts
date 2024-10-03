@@ -1,6 +1,7 @@
 import {
   checkConfirmation,
   fetchData,
+  fetchManifest,
   fetchEvents,
   getAddressFromKey,
   resumeUpload,
@@ -51,11 +52,11 @@ export const ClustersDA = class {
           ? this.manifestUploader
           : await getAddressFromKey(this.arweaveRpc, this.manifestUploader),
       );
-      const manifest = await fetchData(this.arweaveRpc, [manifestId]);
-      if (!Array.isArray(manifest[0]) || manifest[0].length === 0 || !('id' in manifest[0][0])) {
+      const manifest = await fetchManifest(this.arweaveRpc, manifestId);
+      if (!Array.isArray(manifest) || manifest.length === 0 || !('id' in manifest[0])) {
         throw new Error('Invalid manifest data retrieved');
       }
-      return manifest[0] as ManifestData[];
+      return manifest;
     } catch (error) {
       throw new Error(`Error retrieving manifest from Arweave: ${error}`);
     }
@@ -124,7 +125,7 @@ export const ClustersDA = class {
     }
   };
 
-  getFileIds = async (ids: string[]): Promise<(Event[] | ManifestData[])[]> => {
+  getFileIds = async (ids: string[]): Promise<Event[][]> => {
     try {
       if (this.arweaveRpc === undefined) throw new Error('No Arweave RPC config was provided.');
 

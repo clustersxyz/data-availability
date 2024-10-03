@@ -288,17 +288,51 @@ export const resumeUpload = async (rpc: ApiConfig, receipt: UploadReceipt): Prom
   }
 };
 
+export const fetchManifest = async (rpc: ApiConfig, txid: string): Promise<ManifestData[]> => {
+  try {
+    const arweave = await getArweave(rpc);
+    let manifest: ManifestData[] = [];
+
+    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    let data: string | Uint8Array = '';
+    let retries: number = 0;
+    while (data.length <= 1 && retries < 10) {
+      if (retries > 0) {
+        await sleep(6_000);
+      }
+      data = await arweave.transactions.getData(txid, { decode: true, string: true });
+      ++retries;
+    }
+
+    if (data.length <= 1 && retries === 10) throw new Error(`Arweave gateway returning no data`);
+    const parsedData = JSON.parse(data as string);
+
+    if (!Array.isArray(parsedData)) throw new Error(`Invalid data format for txid: ${txid}`);
+
+    if (isManifestData(parsedData[0])) {
+      manifest = parsedData;
+    } else {
+      throw new Error(`Unsupported data format for txid: ${txid}`);
+    }
+
+    return manifest;
+  } catch (error) {
+    throw new Error(`Error fetching manifest: ${error}`);
+  }
+};
+
 export const fetchData = async (
   rpc: ApiConfig,
   txids: string[],
   startTimestamp?: number,
   endTimestamp?: number,
-): Promise<(Event[] | ManifestData[])[]> => {
+): Promise<Event[][]> => {
   try {
     if (txids.length === 0) throw new Error(`No transaction IDs were provided for retrieval.`);
 
     const arweave = await getArweave(rpc);
-    const response: (Event[] | ManifestData[])[] = [];
+    const response: Event[][] = [];
 
     const filterEventsByTimestamp = (events: Event[]): Event[] => {
       return events.filter(
@@ -321,21 +355,20 @@ export const fetchData = async (
     for (const tx of txids) {
       let data: string | Uint8Array = '';
       let retries: number = 0;
-      while (data.length <= 1 && retries < 5) {
-        data = await arweave.transactions.getData(tx, { decode: true, string: true });
-        if (retries > 1) {
-          await sleep(10_000);
+      while (data.length <= 1 && retries < 10) {
+        if (retries > 0) {
+          await sleep(6_000);
         }
+        data = await arweave.transactions.getData(tx, { decode: true, string: true });
         ++retries;
       }
-      if (data.length <= 1 && retries === 5) throw new Error(`Arweave gateway returning no data`);
+      if (data.length <= 1 && retries === 10) throw new Error(`Arweave gateway returning no data`);
       const parsedData = JSON.parse(data as string);
 
       if (!Array.isArray(parsedData)) throw new Error(`Invalid data format for txid: ${tx}`);
 
-      if (parsedData.length === 0) {
-        response.push([]);
-      } else if (Array.isArray(parsedData[0])) {
+      if (Array.isArray(parsedData[0])) {
+        // If parsedData is an array of arrays, it is a collection of events
         const events = convertDataToEvents(parsedData as V1EventData[]);
         if (startTimestamp !== undefined || endTimestamp !== undefined) {
           response.push(filterEventsByTimestamp(events));
@@ -343,33 +376,34 @@ export const fetchData = async (
           response.push(events);
         }
       } else if (isManifestData(parsedData[0])) {
+        // If parsedData contains ManifestData objects, it is the manifest
+        let manifest: ManifestData[] = parsedData;
+        // If timestamps are provided, treat this like a query and filter the manifest
         if (startTimestamp !== undefined || endTimestamp !== undefined) {
-          const filteredManifest = filterManifestByTimestamp(parsedData as ManifestData[]);
-
-          // Fetch and filter events for each manifest entry
-          let allFilteredEvents: Event[] = [];
-          for (const entry of filteredManifest) {
-            let entryData: string | Uint8Array = '';
-            let retries: number = 0;
-            while (entryData.length <= 1 && retries < 5) {
-              entryData = await arweave.transactions.getData(entry.id, { decode: true, string: true });
-              if (retries > 1) {
-                await sleep(10_000);
-              }
-              ++retries;
-            }
-            if (entryData.length <= 1 && retries === 5) throw new Error(`Arweave gateway returning no data`);
-
-            const parsedEntryData = JSON.parse(entryData as string) as V1EventData[];
-            const entryEvents = convertDataToEvents(parsedEntryData);
-
-            const filteredEvents = filterEventsByTimestamp(entryEvents);
-            allFilteredEvents = allFilteredEvents.concat(filteredEvents);
-          }
-          response.push(allFilteredEvents);
-        } else {
-          response.push(parsedData as ManifestData[]);
+          manifest = filterManifestByTimestamp(parsedData as ManifestData[]);
         }
+
+        // Fetch and filter events for each manifest entry
+        let allFilteredEvents: Event[] = [];
+        for (const entry of manifest) {
+          let entryData: string | Uint8Array = '';
+          let retries: number = 0;
+          while (entryData.length <= 1 && retries < 10) {
+            if (retries > 0) {
+              await sleep(6_000);
+            }
+            entryData = await arweave.transactions.getData(entry.id, { decode: true, string: true });
+            ++retries;
+          }
+          if (entryData.length <= 1 && retries === 10) throw new Error(`Arweave gateway returning no data`);
+
+          const parsedEntryData = JSON.parse(entryData as string) as V1EventData[];
+          const entryEvents = convertDataToEvents(parsedEntryData);
+
+          const filteredEvents = filterEventsByTimestamp(entryEvents);
+          allFilteredEvents = allFilteredEvents.concat(filteredEvents);
+        }
+        response.push(allFilteredEvents);
       } else {
         throw new Error(`Unsupported data format for txid: ${tx}`);
       }
@@ -408,9 +442,7 @@ export const updateManifest = async (
     if (!data.every((item) => item.isComplete === true)) throw new Error(`Failed upload receipt in data.`);
     if (manifestTxId === '') throw new Error(`No manifest TXID was provided.`);
 
-    const oldManifestData = await fetchData(rpc, [manifestTxId]);
-    if (oldManifestData.length === 0) throw new Error(`Previous manifest TXID did not return any manifest data.`);
-    const oldManifest = oldManifestData[0];
+    const oldManifest = await fetchManifest(rpc, manifestTxId);
     if (
       !Array.isArray(oldManifest) ||
       !oldManifest.every(
