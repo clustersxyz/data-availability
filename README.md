@@ -113,4 +113,4 @@ try {
 
 ## License
 
-MIT
+[MIT](https://github.com/clustersxyz/data-availability/blob/main/LICENSE)
